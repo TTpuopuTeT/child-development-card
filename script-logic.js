@@ -5,7 +5,7 @@
    - авто-высота textarea
    - модальные окна (подсказки, дисклеймер)
    - «Другое» для ППк
-   - подготовка и вызов печати
+   - печать с клонированием textarea в div (весь текст целиком)
    ============================================================ */
 
 // ===== АВТОЗАПОЛНЕНИЕ ЗАКЛЮЧЕНИЙ (РАЗДЕЛ VII) =====
@@ -130,12 +130,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// ===== ПЕЧАТЬ =====
+// ===== ПЕЧАТЬ: клонирование textarea в div =====
 function prepareAndPrint() {
-    // 1) сбрасываем прошлые пометки
+    // 0) чистим прошлые клоны и пометки
     document.querySelectorAll('.hide-on-print').forEach(function (el) { el.classList.remove('hide-on-print'); });
+    document.querySelectorAll('.print-textarea').forEach(function (el) { el.remove(); });
+    document.querySelectorAll('textarea').forEach(function (el) {
+        el.dataset.wasHidden = '';
+    });
 
-    // 2) невыбранные чекбоксы/радио — прячем их label-обёртку
+    // 1) невыбранные чекбоксы/радио — прячем их label-обёртку
     document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(function (input) {
         var container = input.closest('label') || input.closest('li') || input.parentNode;
         if (!container) return;
@@ -146,37 +150,22 @@ function prepareAndPrint() {
         }
     });
 
-    // 3) пустые/заполненные текстовые поля и textarea
-    document.querySelectorAll('input[type="text"], textarea').forEach(function (field) {
+    // 2) текстовые input — прячем пустые .field
+    document.querySelectorAll('input[type="text"]').forEach(function (field) {
         if (field.classList.contains('sign-fio') || field.classList.contains('date-dash')) {
             field.setAttribute('value', field.value);
             return;
         }
-
         var isEmpty = field.value.trim() === '';
-        if (!isEmpty) {
-            field.setAttribute('value', field.value);
-            if (field.tagName.toLowerCase() === 'textarea') field.textContent = field.value;
-            return;
-        }
-
-        // ПУСТОЕ — решаем, что прятать
-        if (field.tagName.toLowerCase() === 'textarea') {
-            if (field.id && field.id.indexOf('_conclusion_') !== -1) return;
-            if (field.closest('td') || field.closest('th')) {
-                field.classList.add('hide-on-print');
-                return;
-            }
-            var wrap = field.closest('.field');
+        var wrap = field.closest('.field');
+        if (isEmpty) {
             (wrap || field).classList.add('hide-on-print');
-            return;
+        } else {
+            field.setAttribute('value', field.value);
         }
-
-        var inputWrap = field.closest('.field');
-        (inputWrap || field).classList.add('hide-on-print');
     });
 
-    // 4) пустые select — прячем .field
+    // 3) пустые select — прячем .field
     document.querySelectorAll('select').forEach(function (select) {
         var text = select.options[select.selectedIndex].text;
         if (select.value === '' || text.indexOf('выберите') !== -1) {
@@ -185,45 +174,110 @@ function prepareAndPrint() {
         }
     });
 
-    // 5) строки таблиц — прячем ТОЛЬКО если ВСЕ поля пустые и нет галочек/радио
+    // 4) КЛЮЧЕВОЕ: клонируем ВСЕ непустые textarea в <div class="print-textarea">
+    document.querySelectorAll('textarea').forEach(function (ta) {
+        var isEmpty = ta.value.trim() === '';
+        var isConclusion = ta.id && ta.id.indexOf('_conclusion_') !== -1;
+
+        if (isEmpty) {
+            // пустое — прячем (как раньше)
+            if (isConclusion) {
+                // заключения не трогаем — они и так пустые и не нужны в печати,
+                // но если вдруг понадобятся — их просто не будет видно
+            } else if (ta.closest('td') || ta.closest('th')) {
+                ta.classList.add('hide-on-print');
+            } else {
+                var wrap = ta.closest('.field');
+                (wrap || ta).classList.add('hide-on-print');
+            }
+            return;
+        }
+
+        // непустое — создаём div-клон с тем же текстом
+        var div = document.createElement('div');
+        div.className = 'print-textarea';
+        div.textContent = ta.value;
+
+        // копируем размерные классы
+        if (ta.classList.contains('long-field')) div.style.minHeight = '70px';
+        if (ta.classList.contains('dash-placeholder-xl')) div.style.minWidth = '300px';
+        if (ta.classList.contains('dash-placeholder-long')) div.style.minWidth = '200px';
+
+        // вставляем div сразу после textarea
+        ta.parentNode.insertBefore(div, ta.nextSibling);
+
+        // скрываем оригинальную textarea на время печати
+        ta.dataset.wasHidden = '1';
+        ta.classList.add('hide-on-print');
+    });
+
+    // 5) строки таблиц — прячем ТОЛЬКО если все поля пустые и нет галочек/радио
     document.querySelectorAll('tbody tr').forEach(function (row) {
         if (row.querySelector('input[type="checkbox"]:checked, input[type="radio"]:checked')) return;
 
         var hasFilled = false;
-        row.querySelectorAll('textarea').forEach(function (ta) { if (ta.value && ta.value.trim() !== '') hasFilled = true; });
+
+        // есть непустая textarea (не скрытая)
+        row.querySelectorAll('textarea').forEach(function (ta) {
+            if (!ta.classList.contains('hide-on-print') && ta.value && ta.value.trim() !== '') hasFilled = true;
+        });
         if (hasFilled) return;
-        row.querySelectorAll('input[type="text"]').forEach(function (inp) { if (inp.value && inp.value.trim() !== '') hasFilled = true; });
+
+        // есть div-клон с текстом
+        row.querySelectorAll('.print-textarea').forEach(function (d) {
+            if (d.textContent && d.textContent.trim() !== '') hasFilled = true;
+        });
         if (hasFilled) return;
+
+        // есть непустой input[type=text]
+        row.querySelectorAll('input[type="text"]').forEach(function (inp) {
+            if (inp.value && inp.value.trim() !== '') hasFilled = true;
+        });
+        if (hasFilled) return;
+
+        // есть выбранный select
         row.querySelectorAll('select').forEach(function (sel) {
             if (sel.value !== '' && sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].text.indexOf('выберите') === -1) hasFilled = true;
         });
         if (hasFilled) return;
 
-        var anyField = row.querySelector('input, textarea, select');
+        // нет ни одного поля — не прячем
+        var anyField = row.querySelector('input, textarea, select, .print-textarea');
         if (!anyField) return;
 
+        // все поля пустые — прячем строку
         row.classList.add('hide-on-print');
     });
 
-    // 6) ПРИНУДИТЕЛЬНО РАСТЯГИВАЕМ ВСЕ TEXTAREA ПЕРЕД ПЕЧАТЬЮ
-    //    Важно: снимаем inline-высоту, ставим scrollHeight, дублируем overflow
-    document.querySelectorAll('textarea').forEach(function (el) {
-        el.style.height = 'auto';
-        el.style.height = el.scrollHeight + 'px';
-        el.style.overflow = 'visible';
-        el.style.minHeight = '0';
-        el.style.maxHeight = 'none';
-    });
+    // 6) функция восстановления после печати
+    function restore() {
+        document.querySelectorAll('.print-textarea').forEach(function (el) { el.remove(); });
+        document.querySelectorAll('textarea').forEach(function (el) {
+            if (el.dataset.wasHidden === '1') {
+                el.classList.remove('hide-on-print');
+                el.dataset.wasHidden = '';
+            }
+        });
+    }
 
     // 7) ждём загрузки QR-картинок, потом печатаем
     var qrImgs = Array.from(document.querySelectorAll('.qr-code img'));
     var pending = qrImgs.filter(function (img) { return !img.complete || img.naturalHeight === 0; });
 
-    if (pending.length === 0) { window.print(); return; }
+    if (pending.length === 0) {
+        window.print();
+        setTimeout(restore, 200);
+        return;
+    }
 
     var remaining = pending.length;
     var printed = false;
-    function doPrint() { if (printed) return; printed = true; window.print(); }
+    function doPrint() {
+        if (printed) return;
+        printed = true;
+        window.print();
+        setTimeout(restore, 200);
+    }
 
     pending.forEach(function (img) {
         function done() { remaining--; if (remaining <= 0) doPrint(); }
