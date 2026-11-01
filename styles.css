@@ -236,8 +236,14 @@ textarea {
 
     .qr-panel { display: block !important; page-break-inside: avoid; }
 
+    /* ← ключевые правки для печати textarea, чтобы окна не «схлопывались» */
     textarea {
         resize: none !important;
         overflow: visible !important;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
     }
 }
