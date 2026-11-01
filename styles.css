@@ -236,8 +236,34 @@ textarea {
 
     .qr-panel { display: block !important; page-break-inside: avoid; }
 
+    /* ===== КЛЮЧЕВЫЕ ПРАВКИ ДЛЯ TEXTAREA ===== */
     textarea {
-        resize: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
         overflow: visible !important;
+        resize: none !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* ===== ЯЧЕЙКИ ТАБЛИЦ НЕ РЕЖУТ СОДЕРЖИМОЕ ===== */
+    td, th {
+        overflow: visible !important;
+        height: auto !important;
+    }
+    tr {
+        page-break-inside: avoid;
+    }
+
+    /* ===== GRID-2 НА ПЕЧАТИ — ОДНА КОЛОНКА ===== */
+    .grid-2 {
+        display: block !important;
+    }
+    .grid-2 > .field {
+        width: 100% !important;
+        margin-bottom: 10px;
     }
 }
