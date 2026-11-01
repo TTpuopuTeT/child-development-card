@@ -200,6 +200,11 @@ textarea {
     transition: height 0.08s ease;
 }
 
+/* ===== КЛОНИРОВАНИЕ TEXTAREA ДЛЯ ПЕЧАТИ ===== */
+.print-textarea {
+    display: none;
+}
+
 /* ===== СТИЛИ ДЛЯ ПЕЧАТИ ===== */
 @media print {
     html, body, main, .wrapper, .container, form, blockquote {
@@ -236,7 +241,24 @@ textarea {
 
     .qr-panel { display: block !important; page-break-inside: avoid; }
 
-    /* ===== КЛЮЧЕВЫЕ ПРАВКИ ДЛЯ TEXTAREA ===== */
+    /* ===== КЛЮЧЕВОЕ: div-клоны textarea при печати ===== */
+    .print-textarea {
+        display: block !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        border-bottom: 1px dashed #b0b0b0 !important;
+        min-height: 1em !important;
+        width: 100% !important;
+        color: #000 !important;
+        background: transparent !important;
+        padding: 0 !important;
+        font-family: inherit !important;
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+        margin: 0 !important;
+    }
+
+    /* ===== РЕЗЕРВ: textarea, которые не были клонированы (пустые заключения и т.п.) ===== */
     textarea {
         height: auto !important;
         min-height: 0 !important;
