@@ -162,9 +162,7 @@ function prepareAndPrint() {
 
         // ПУСТОЕ — решаем, что прятать
         if (field.tagName.toLowerCase() === 'textarea') {
-            // заключения раздела VII не трогаем никогда
             if (field.id && field.id.indexOf('_conclusion_') !== -1) return;
-            // textarea внутри таблицы — прячем только её саму
             if (field.closest('td') || field.closest('th')) {
                 field.classList.add('hide-on-print');
                 return;
@@ -174,7 +172,6 @@ function prepareAndPrint() {
             return;
         }
 
-        // input[type="text"]
         var inputWrap = field.closest('.field');
         (inputWrap || field).classList.add('hide-on-print');
     });
@@ -188,13 +185,10 @@ function prepareAndPrint() {
         }
     });
 
-    // 5) строки таблиц — прячем ТОЛЬКО если ВСЕ поля пустые и нет ни одной галочки/радио
-    //    ВАЖНО: строки, где нет полей (только текст) — НЕ прячем
+    // 5) строки таблиц — прячем ТОЛЬКО если ВСЕ поля пустые и нет галочек/радио
     document.querySelectorAll('tbody tr').forEach(function (row) {
-        // есть отмеченная галочка/радио — не трогаем
         if (row.querySelector('input[type="checkbox"]:checked, input[type="radio"]:checked')) return;
 
-        // есть хоть одно непустое поле — не трогаем
         var hasFilled = false;
         row.querySelectorAll('textarea').forEach(function (ta) { if (ta.value && ta.value.trim() !== '') hasFilled = true; });
         if (hasFilled) return;
@@ -205,18 +199,20 @@ function prepareAndPrint() {
         });
         if (hasFilled) return;
 
-        // нет ни одного поля — не прячем (это просто текстовая строка, как в разделе VIII)
         var anyField = row.querySelector('input, textarea, select');
         if (!anyField) return;
 
-        // все поля пустые — прячем строку
         row.classList.add('hide-on-print');
     });
 
-    // 6) растягиваем textarea по содержимому (для печати)
+    // 6) ПРИНУДИТЕЛЬНО РАСТЯГИВАЕМ ВСЕ TEXTAREA ПЕРЕД ПЕЧАТЬЮ
+    //    Важно: снимаем inline-высоту, ставим scrollHeight, дублируем overflow
     document.querySelectorAll('textarea').forEach(function (el) {
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
+        el.style.overflow = 'visible';
+        el.style.minHeight = '0';
+        el.style.maxHeight = 'none';
     });
 
     // 7) ждём загрузки QR-картинок, потом печатаем
