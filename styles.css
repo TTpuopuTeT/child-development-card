@@ -1,8 +1,3 @@
-/* ============================================================
-   styles.css — стили для карты развития ребёнка
-   Проект: child-development-card
-   ============================================================ */
-
 /* ===== БАЗОВЫЕ СТИЛИ ===== */
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#e9f0f5; font-family:'Segoe UI',Roboto,system-ui,sans-serif; padding:16px 10px; display:flex; justify-content:center; min-height:100vh; }
@@ -258,7 +253,7 @@ textarea {
         margin: 0 !important;
     }
 
-    /* ===== РЕЗЕРВ: textarea, которые не были клонированы (пустые заключения и т.п.) ===== */
+    /* ===== РЕЗЕРВ: textarea, которые не были клонированы ===== */
     textarea {
         height: auto !important;
         min-height: 0 !important;
@@ -278,14 +273,5 @@ textarea {
     }
     tr {
         page-break-inside: avoid;
-    }
-
-    /* ===== GRID-2 НА ПЕЧАТИ — ОДНА КОЛОНКА ===== */
-    .grid-2 {
-        display: block !important;
-    }
-    .grid-2 > .field {
-        width: 100% !important;
-        margin-bottom: 10px;
     }
 }
